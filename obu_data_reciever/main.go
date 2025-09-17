@@ -10,14 +10,20 @@ import (
 )
 
 type DataReciever struct {
-	msgch chan types.OBUData
-	conn  *websocket.Conn
+	conn     *websocket.Conn
+	producer DataProducer
 }
 
-func NewDataReciever() *DataReciever {
-	return &DataReciever{
-		msgch: make(chan types.OBUData, 128),
+func NewDataReciever() (*DataReciever, error) {
+	kafkaTopic := "obudata"
+	p, err := NewKafkaProducer(kafkaTopic)
+	if err != nil {
+		return nil, err
 	}
+	p = NewLogMiddleware(p)
+	return &DataReciever{
+		producer: p,
+	}, err
 }
 
 func (dr *DataReciever) handleWS(w http.ResponseWriter, r *http.Request) {
@@ -46,13 +52,18 @@ func (dr *DataReciever) wsRecieveLoop() {
 		}
 
 		fmt.Printf("Recived data from [%d]: %+v \n", data.OBUID, data)
+		if err := dr.producer.ProduceData(data); err != nil {
+			fmt.Printf("Kafka produced error: %+v\n", err)
+		}
 
-		dr.msgch <- data
 	}
 }
 
 func main() {
-	recv := NewDataReciever()
+	recv, err := NewDataReciever()
+	if err != nil {
+		log.Fatal(err)
+	}
 	http.HandleFunc("/ws", recv.handleWS)
 	http.ListenAndServe(":30000", nil)
 }
