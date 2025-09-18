@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/perfect047/roadcharge/types"
@@ -46,20 +45,18 @@ func (c *KafkaConsumer) readMessageLoop() {
 			continue
 		}
 
-		var data types.OBUData
+		data := types.OBUData{}
 
-		if err := json.Unmarshal(msg.Value, data); err != nil {
+		if err := json.Unmarshal(msg.Value, &data); err != nil {
 			logrus.Errorf("Kafka message json serialzation error: %s", err)
 			continue
 		}
 
-		dist, err := c.calcService.CalculateDistance(data)
+		_, err = c.calcService.CalculateDistance(data)
 		if err != nil {
 			logrus.Errorf("Calculate distance service error: %s", err)
 			continue
 		}
-
-		fmt.Printf("Distance %.2f\n", dist)
 	}
 }
 
