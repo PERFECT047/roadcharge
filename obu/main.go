@@ -11,8 +11,8 @@ import (
 	"github.com/perfect047/roadcharge/types"
 )
 
-const sendInterval = 1
-const vehicleCount = 20
+const sendInterval = 10
+const vehicleCount = 1
 const wsEndpoint = "ws://127.0.0.1:30000/ws"
 
 func genLocation() (float64, float64) {
